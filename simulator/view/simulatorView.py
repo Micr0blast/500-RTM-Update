@@ -9,8 +9,16 @@ from .resources import *
 DIAL_TOOLTIP = "Schraube drehen, um die Scan-Spitze an die Probe anzunähern"
 SLIDER_TOOLTIP = "Slider bewegen, um die Scan-Spitze an die Probe anzunähern"
 
+SCREW_MIN = 0
+SCREW_MAX = 100
+SCREW_STEP = 0.1
+SCREW_DEFAULT = 50
+SCREW_NOTCHES_VISIBLE = False
+
 
 class ValueRadioButton(qtw.QRadioButton):
+    """This class extends the QRadioButton class with a value attribute so that the correct material can be loaded
+    """
     def __init__(self):
         super(ValueRadioButton, self).__init__()
         self.value = None
@@ -21,20 +29,9 @@ class ValueRadioButton(qtw.QRadioButton):
     def getValue(self):
         return self.value
 
-
-class ValuePushButton(qtw.QPushButton):
-    def __init__(self):
-        super(ValuePushButton, self).__init__()
-        self.value = None
-
-    def setValue(self, val):
-        self.value = val
-
-    def getValue(self):
-        return self.value
-
-
 class QHLine(qtw.QFrame):
+    """This class uses the QFrame widget to create a horizontal line for visual division
+    """
     def __init__(self):
         super(QHLine, self).__init__()
         self.setFrameShape(qtw.QFrame.HLine)
@@ -46,7 +43,7 @@ class SimulatorView(qtw.QWidget):
     valuesChanged = qtc.Signal(list)
     materialChosen = qtc.Signal(int)
 
-    def __init__(self, screwMin: float = 0, screwMax: float = 100, stepSize: float = 0.1, default: float = 50, notchesVisible: bool = True):
+    def __init__(self, screwMin: float = SCREW_MIN, screwMax: float = SCREW_MAX, stepSize: float = SCREW_STEP, default: float = SCREW_DEFAULT, notchesVisible: bool = SCREW_NOTCHES_VISIBLE):
         super().__init__()
         self.centralLayout = qtw.QVBoxLayout()
         self.dialLayout = qtw.QHBoxLayout()
@@ -58,17 +55,6 @@ class SimulatorView(qtw.QWidget):
         self.materialChoiceContainer = qtw.QWidget()
         self.materialChoice = qtw.QHBoxLayout()
         self.materialChoiceContainer.setLayout(self.materialChoice)
-
-        self.matButtonOne = ValuePushButton()
-        self.matButtonOne.setText("Graphit")
-        self.matButtonOne.setValue(0)
-
-        self.matButtonTwo = ValuePushButton()
-        self.matButtonTwo.setText("Platin")
-        self.matButtonTwo.setValue(1)
-        self.matButtonThree = ValuePushButton()
-        self.matButtonThree.setText("Rhodium")
-        self.matButtonThree.setValue(2)
 
         self.graphiteLabel = qtw.QLabel("Graphit")
         self.platinumLabel = qtw.QLabel("Platin")
@@ -105,10 +91,10 @@ class SimulatorView(qtw.QWidget):
         self.simulatorImgLbl.setStyleSheet("QLabel {font-weight: bold;}")
         self.toggleHelpBtn = qtw.QPushButton("Hilfe")
         self.toggleHelpBtn.setCheckable(True)
+        self.toggleHelpBtn.clicked.connect(self.showHelp)
 
         self.simulatorExplanationLbl = qtw.QLabel("Das Bild zeigt den Prototypen in der Draufsicht.\nUm im Vorbereitungstab des Hauptfensters einen\nTunnelstrom zu sehen müssen alle 3 Schrauben in \ndie richtige Position gebracht werden")
         self.simulatorExplanationLbl.setHidden(True)
-        self.toggleHelpBtn.clicked.connect(self.showHelp)
         self.centralLayout.addWidget(QHLine())
         self.rowLayout.addWidget(self.simulatorImgLbl)
         self.rowLayout.addWidget(self.toggleHelpBtn)
@@ -123,6 +109,7 @@ class SimulatorView(qtw.QWidget):
         self.screwDialOne.valueChanged.connect(self.submitValuesChanged)
         self.screwDialTwo.valueChanged.connect(self.submitValuesChanged)
         self.screwDialThree.valueChanged.connect(self.submitValuesChanged)
+        
 
 
         self.setStyleSheet("""
@@ -136,36 +123,50 @@ class SimulatorView(qtw.QWidget):
                 font-size: 12px;
             }
         """)
-        # End main UI codeF
+
         self.show()
 
     def showHelp(self):
+        """This function toggles the help text for the simulator
+        """
         self.simulatorExplanationLbl.setHidden(self.toggleHelpBtn.isChecked())
 
-    def changeMaterial(self, b):
+    def changeMaterial(self):
+        """ This method changes the material which is used for simulation
+        """
         graphiteElement = self.materialChoiceContainer.children()[2]
         platinumElement = self.materialChoiceContainer.children()[4]
         rhodiumElement = self.materialChoiceContainer.children()[6]
         self.resetDialsAndSliders()
+
+
         if graphiteElement.isChecked():
             self.materialChosen.emit(graphiteElement.getValue())
             
-        if platinumElement.isChecked():
+        elif platinumElement.isChecked():
             self.materialChosen.emit(platinumElement.getValue())
         
-        if rhodiumElement.isChecked():
+        elif rhodiumElement.isChecked():
             self.materialChosen.emit(rhodiumElement.getValue())
     
 
     def resetDialsAndSliders(self):
-        self.screwDialOne.setValue(0)
-        self.screwDialTwo.setValue(0)
-        self.screwDialThree.setValue(0)
-        # self.screwSliderOne.setValue(0)
-        # self.screwSliderTwo.setValue(0)
-        # self.screwSliderThree.setValue(0)
+        """ This function resets the screws and dials to the the default value
+        """
+        self.screwDialOne.setValue(SCREW_DEFAULT)
+        self.screwDialTwo.setValue(SCREW_DEFAULT)
+        self.screwDialThree.setValue(SCREW_DEFAULT)
 
     def setupSlidersAndDials(self, min: float, max: float, step: float, default: float, notches: bool):
+        """This function creates the sliders and dial pairs with the given parameters
+
+        Args:
+            min (float): lower bound of the widgets
+            max (float): upper bound of the widgets
+            step (float): step size of each increment
+            default (float): initial value
+            notches (bool): whether screws should be displayed with notches
+        """
         self.screwDialOne = self.createDial(
             min, max, step, default, notches)
         self.screwDialTwo = self.createDial(
@@ -257,6 +258,8 @@ class SimulatorView(qtw.QWidget):
         return dial
 
     def submitValuesChanged(self):
+        """This function returns the current values of the three screws / sliders
+        """
         values = tuple([self.screwDialOne.value(), self.screwDialTwo.value(),
                         self.screwDialThree.value()])
         self.valuesChanged.emit(values)
