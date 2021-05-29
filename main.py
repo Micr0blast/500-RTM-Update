@@ -12,6 +12,17 @@ from widgets.centralPlotWidget import CentralPlotWidget
 from simulator.simulator import SimulatorWindow
 from widgets.canvas import Canvas
 
+ENABLE_FILE_TREE = False
+ENABLE_SPLASH_SCREEN = False
+
+PID_PARAMETER_LABEL = "Regel-Parameter"
+SCAN_PARAMETER_LABEL = "Scan-Parameter"
+
+WINDOW_TITLE = "STM Scan-UI"
+
+INITIAL_WINDOW_WIDTH = 1200
+INITIAL_WINDOW_HEIGHT = 800
+
 
 class ValueRadioButton(qtw.QRadioButton):
     def __init__(self):
@@ -44,19 +55,12 @@ class MainWindow(qtw.QMainWindow):
         self.redLEDPxm = qtg.QPixmap(":/icons/led_red.png").scaled(16,16,qtc.Qt.KeepAspectRatio)
         self.greenLEDPxm = qtg.QPixmap(":/icons/led_green.png").scaled(16,16,qtc.Qt.KeepAspectRatio)
 
-        self.setWindowTitle("STM Scan UI")
-        self.resize(1200, 800)
+        self.setWindowTitle(WINDOW_TITLE)
+        self.resize(INITIAL_WINDOW_HEIGHT, INITIAL_WINDOW_WIDTH)
 
         self.menuBar = self.menuBar()
         self.fileMenu = self.menuBar.addMenu("Datei")
         self.helpMenu = self.menuBar.addMenu("Hilfe")
-
-        self.openAction = qtw.QAction(
-            self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
-            "Dateispeicherort auswhälen",
-            self,
-            triggered=self.showChooseSaveDirDialog
-        )
 
         self.closeAction = qtw.QAction(
             self.style().standardIcon(qtw.QStyle.SP_DockWidgetCloseButton),
@@ -70,6 +74,13 @@ class MainWindow(qtw.QMainWindow):
             self,
             triggered=self.saveScan
         )
+        if ENABLE_FILE_TREE:
+            self.openAction = qtw.QAction(
+                self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
+                "Dateispeicherort auswhälen",
+                self,
+                triggered=self.showChooseSaveDirDialog
+            )
 
         # self.fileMenu.addAction(self.openAction)
         # self.fileMenu.addAction(self.saveAction)
@@ -94,7 +105,8 @@ class MainWindow(qtw.QMainWindow):
 
         self.setupExperimentDock()
 
-        # self.showSplashScreen()
+        if ENABLE_SPLASH_SCREEN:
+            self.showSplashScreen()
 
         self.setStyleSheet(
             """
@@ -132,12 +144,12 @@ class MainWindow(qtw.QMainWindow):
         # End main UI code
         self.show()
 
-        # self.showIntroScreen()
+        if ENABLE_FILE_TREE:
+            self.showIntroScreen()
  
     def setupExperimentDock(self):
-        # each param has a box and a slider in dependence on one another
-        # each box has a validator constraining it to certain values
-        # 2 rows
+        """Setup up the experiment dock widget"""
+        
         self.experimentDock = qtw.QDockWidget("Scan-Parameter")
         self.experimentDock.setTitleBarWidget(qtw.QWidget(self))
         self.experimentDock.setFeatures(qtw.QDockWidget.NoDockWidgetFeatures)
@@ -147,7 +159,7 @@ class MainWindow(qtw.QMainWindow):
         self.expDockWidgetContainer.setLayout(qtw.QVBoxLayout())
         self.experimentDock.setWidget(self.expDockWidgetContainer)
 
-        self.piGroupBox = qtw.QGroupBox("Regel-Parameter", self)
+        self.piGroupBox = qtw.QGroupBox(f"{PID_PARAMETER_LABEL}", self)
         self.piGroupBox.setStyleSheet("QGroupBox {font-weight: bold;}")
         self.piGroupBox.resize(60, 180)
         self.piGroupBox.setLayout(qtw.QVBoxLayout())
@@ -158,7 +170,7 @@ class MainWindow(qtw.QMainWindow):
         self.pGainRow = self.createParameterRow("kP:", "2", "0-100000", double=True, bottom=0, top=100000)
         self.iGainRow = self.createParameterRow("kI:", "0.5", "0-100000", double=True, bottom=0, top=100000)
         self.zHeightRow = self.createParameterRow("Zielstrom:", "20", "10-100nA")
-        self.updateControlParametersBtn = qtw.QPushButton("Parameter aktualisieren", clicked=self.updateParametersHandler)
+        self.updateControlParametersBtn = qtw.QPushButton(f"{PID_PARAMETER_LABEL} aktualisieren", clicked=self.updateParametersHandler)
 
         self.piGroupBox.layout().addWidget(self.biasVoltageRow) # TODO : ADD TO SIMULATOR
         self.piGroupBox.layout().addWidget(self.pGainRow)
@@ -168,7 +180,7 @@ class MainWindow(qtw.QMainWindow):
         self.piGroupBox.layout().addWidget(self.updateControlParametersBtn)
         
 
-        self.scanGroupBox = qtw.QGroupBox("Scan-Parameter", self)
+        self.scanGroupBox = qtw.QGroupBox(f"{SCAN_PARAMETER_LABEL}", self)
         self.scanGroupBox.setStyleSheet("QGroupBox {font-weight: bold;}")
         self.scanGroupBox.setLayout(qtw.QVBoxLayout())
 
@@ -250,12 +262,14 @@ class MainWindow(qtw.QMainWindow):
 
         if self.microscope != None:
             self.microscope.updateControlParameters((biasV, pGain, iGain, zHeight))
-            self.updateLog("Kontroll-Parameter aktualisiert.")
+            self.updateLog(f"{PID_PARAMETER_LABEL} aktualisiert.")
         else:
-            self.updateLog("RTM auswählen um Kontroll-Parameter zu aktualisieren.")
+            self.updateLog(f"RTM auswählen um {PID_PARAMETER_LABEL} zu aktualisieren.")
 
    
     def setupToolBar(self):
+        """ DEPRECATED """
+
         self.toolBar = qtw.QToolBar("Scan")
         self.toolBar.setMovable(False)
         self.toolBar.setFloatable(False)
