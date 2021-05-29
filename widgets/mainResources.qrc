@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="icons">
+        <file alias="led_green.png">img/LED_GREEN.png</file>
+        <file alias="led_red.png">img/LED_RED.png</file>
+        <file alias="line_profile_btn.png">img/LINE_PROFILE_BTN.png</file>
+        <file alias="plane_level_btn.png">img/PLANE_LEVEL_BTN.png</file>
+        <file alias="reset_btn.png">img/RESET_BTN.png</file>
+    </qresource>
+</RCC>

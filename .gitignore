@@ -1,0 +1,6 @@
+__pycache__
+widgets\__pycache__
+simulator\view\__pycache__
+simulator\__pycache__
+simulator\model\__pycache__
+.vscode
