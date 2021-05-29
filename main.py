@@ -1,5 +1,4 @@
 import sys
-import gc
 
 from PySide2 import QtWidgets as qtw
 from PySide2 import QtGui as qtg
@@ -542,17 +541,15 @@ class MainWindow(qtw.QMainWindow):
         if emission > 10e-8:
             emission = 10e-8
         self.yData = np.append(self.yData[1:], emission)
-        self.prepAxe.cla()  # Clear the canvas.
+        self.prepAxe.cla()  
         self.prepAxe.plot(self.xData, self.yData, lw="4", color='g', label="Tunnelstrom")
         self.prepAxe.axhline(y=self.microscope.model.getTargetCurrent(), linestyle="--", label="Zieltunnelstrom")   
         self.prepAxe.legend() 
 
-        # self.prepAxe.set_ylim(0, 10e-9)
-        self.prepAxe.set_ylim(0, 10e-8)
+        self.prepAxe.set_ylim(0, 1e-7)
 
         self.prepAxe.set_xlabel("t")
         self.prepAxe.set_ylabel("Tunnelstrom")
-        # Trigger the canvas to update and redraw.
         self.prepCanvas.canvas.draw()
         
 
@@ -585,9 +582,9 @@ class MainWindow(qtw.QMainWindow):
             self.microscope.transmitScanImg.connect(self.updateScanCanvas)
             self.startBtn.setEnabled(False)
             self.stopBtn.setEnabled(True)
-            self.microscope.resumeScan(params)
+            self.microscope.resumeScan()
             
-            self.updateLog(f"Scan mit {params} fortgesetzt.")
+            self.updateLog(f"Scan wird fortgesetzt.")
         else:
             # self.centrWidget.initPlotUI()
             self.statusBar.showMessage("Scan gestarted",10)
@@ -595,6 +592,7 @@ class MainWindow(qtw.QMainWindow):
 
             self.startBtn.setEnabled(False)
             self.stopBtn.setEnabled(True)
+            self.pauseBtn.setEnabled(True)
             self.microscope.startScan(params)
             self.isMidScan = True
             self.updateLog(f"Scan mit {params} gestartet")
@@ -602,10 +600,6 @@ class MainWindow(qtw.QMainWindow):
             if self.tabWidget.currentIndex() == 0:
                 self.updateLog("Scan wurde gestartet - bitte in den Scan Tab wechseln")
 
-    def updateButtonState(self):
-        self.startBtn.setEnabled(True)
-        self.stopBtn.setEnabled(False)
-        self.isMidScan = False
         
 
 
@@ -614,10 +608,6 @@ class MainWindow(qtw.QMainWindow):
         self.startBtn.setEnabled(True)
         self.pauseBtn.setEnabled(False)
         self.stopBtn.setEnabled(True)
-        # disable self
-        # enable play
-        # stop line updates but hold the current y idx
-        return 0
 
     def stopHandler(self):
         self.isMidScan = False
@@ -627,19 +617,7 @@ class MainWindow(qtw.QMainWindow):
         self.microscope.stopScan()
         self.microscope.transmitScanImg.disconnect(self.updateScanCanvas)
 
-def dump_garbage():
-    """
-    show us what the garbage is about
-    """
-    # Force collection
-    print ("\nGARBAGE:")
-    gc.collect(  )
 
-    print ("\nGARBAGE OBJECTS:")
-    for x in gc.garbage:
-        s = str(x)
-        if len(s) > 80: s = s[:77]+'...'
-        print (type(x),"\n  ", s)
 
 
 if __name__ == '__main__':
