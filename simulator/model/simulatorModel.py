@@ -42,10 +42,13 @@ class SimulatorModel(qtc.QObject):
     lineFinished = qtc.Signal(list)
     scanFinished = qtc.Signal()
 
-    def __init__(self, pathToImages=PATH_TO_IMAGES):
+    def __init__(self, pathToImages=PATH_TO_IMAGES, lowerCurrentBound=LOWER_CURRENT_BOUND, upperCurrentBound=UPPER_CURRENT_BOUND):
         super().__init__()
         self.imgPaths = self.getImgPaths(Path(pathToImages))
         self.setCurrentImage(0)
+
+        self.lowerCurrentBound = lowerCurrentBound
+        self.upperCurrentBound = upperCurrentBound
 
         self.biasVoltage = INITIAL_BIASVOLTAGE
 
@@ -78,7 +81,7 @@ class SimulatorModel(qtc.QObject):
         if PID_ENABLED:
             self.tunnelCurrent = retVal
         else:
-            self.tunnelCurrent = self.constrainedTunnelCurrent(retVal, LOWER_CURRENT_BOUND, UPPER_CURRENT_BOUND)
+            self.tunnelCurrent = self.constrainedTunnelCurrent(retVal, self.lowerCurrentBound, self.upperCurrentBound)
             
     def constrainedTunnelCurrent(self, value, lowerBound, upperBound):
         constrainedValue = value
@@ -133,7 +136,7 @@ class SimulatorModel(qtc.QObject):
         img = np.zeros(shape=(lengthX, maxY))
 
         
-        if  self.getTunnelCurrent() < LOWER_CURRENT_BOUND:
+        if  self.getTunnelCurrent() < self.lowerCurrentBound:
             return img
     
         for i in range(lengthY):
@@ -141,10 +144,6 @@ class SimulatorModel(qtc.QObject):
                 startX, startY+i, lengthX, direction, breadth)
 
             img[i] = line
-            # line = None
-        # print(img)
-        # if lengthX == lengthY:
-            # self.scanFinished.emit()
         return img
 
 
