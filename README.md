@@ -1,0 +1,26 @@
+# 500€-RTM-GUI
+
+This is a graphical user interface developped for the 500€ RTM project.
+In its current state the GUI does not support the hardware but it comes with a simulator for testing.
+
+
+## Setup
+In order to run this GUI a few things are needed. 
+- First, Python (https://www.python.org/) has to be installed. 
+  This project was developped with Python 3.8.3 but may run on other versions.
+- Second, Qt (version 5) (https://www.qt.io/ "Qt.io")  itself has to be installed.
+  This is different on depending on the platform of choice. 
+  Please refer to (https://doc.qt.io/qt-5/gettingstarted.html) for more information.
+
+- Then clone this repo, change into its root directory and run
+  `pip install -r requirements.txt`
+
+- To start the GUI then run
+  `python main.py`
+  in the root directory.
+  Running it from somehwere else will break the relative pathing for the simulator's images.
+  
+- If you want to run it from anywhere, go into 
+`simulator/model/simulatorModel.py` and change the PATH_TO_IMAGES to the absolute path of `simulator/img` for your system.
+
+NOTE: Qt resource files were considered and tested but resulted in a filesize of over 150mb.
