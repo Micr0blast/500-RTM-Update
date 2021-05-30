@@ -13,6 +13,7 @@ SCREW_DEFAULT = 0
 SCREW_NOTCHES_VISIBLE = False
 
 TUNNELING_CURRENT_INTERVAL = 50
+SCAN_UPDATE_INTERVAL = 500
 
 PATH_TO_IMAGES = "simulator/img"
 UPPER_CURRENT_BOUND= 1e-7
@@ -42,7 +43,7 @@ class ScanTimerThread(qtc.QThread):
 
 class SimulatorWindow(qtw.QMainWindow):
 
-    transmitTunnelCurrent = qtc.Signal(float)
+    transmitTunnelCurrent = qtc.Signal([float,float])
     transmitScanImg = qtc.Signal(list)
     transmitLineProfile = qtc.Signal(list)
 
@@ -120,7 +121,7 @@ class SimulatorWindow(qtw.QMainWindow):
     def sendTunnelCurrent(self):
         """Emits the models current tunneling current
         """
-        self.transmitTunnelCurrent.emit(self.model.getTunnelCurrent())
+        self.transmitTunnelCurrent.emit(self.model.getTunnelCurrent(),self.model.getTargetCurrent())
 
     def updateControlParameters(self, args):
         """Updates the models PID parameters
@@ -153,7 +154,7 @@ class SimulatorWindow(qtw.QMainWindow):
         if currentVal >= UPPER_CURRENT_BOUND:
             self.logMessage.emit(LOG_CURRENT_TOO_HIGH_MSG)
 
-        self.scanTimerThread = ScanTimerThread()
+        self.scanTimerThread = ScanTimerThread(SCAN_UPDATE_INTERVAL)
         self.scanTimerThread.start()
 
         self.scanTimerThread.scanTimer.timeout.connect(self.scanCallLambda)

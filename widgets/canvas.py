@@ -4,11 +4,12 @@ from PySide2 import QtWidgets as qtw
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-import numpy as np
-
 
 
 class Canvas(qtw.QWidget):
+    """This class encapsulates a Figure object of Matplotlib for use in other Widgets
+
+    """
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         super().__init__(parent)
         self.fig = Figure(figsize=(width, height), dpi=dpi)

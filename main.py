@@ -8,7 +8,8 @@ import tifffile
 
 from widgets.resources import *
 
-from widgets.centralPlotWidget import CentralPlotWidget
+from widgets.scanTabWidget import ScanTabWidget
+from widgets.preparationTabWidget import PreparationTabWidget
 from simulator.simulator import SimulatorWindow
 from widgets.canvas import Canvas
 
@@ -22,6 +23,15 @@ WINDOW_TITLE = "STM Scan-UI"
 
 INITIAL_WINDOW_WIDTH = 1200
 INITIAL_WINDOW_HEIGHT = 800
+
+# For Parameters ( FieldLabel:string, DefaultValue:float/int, Unit:string, isDecimal:bool MinimumValue:float/int, MaximumValue: float/int )
+BIAS_VOLTAGE_VALUES = ("Bias-Spannung", 0.1, "V", True, 0.1, 1.0)
+PK_VALUES = ("kP:", 2, "", True, 0, 10000)
+IK_VALUES = ("kI:", 0.5, "", True, 0, 10000)
+SETPOINT_VALUES = ("Zielstrom:", 20, "nA", True, 10, 100)
+X_START_VALUES = ("Startkoordinate X:", 250, "", False, 0, 4000)
+Y_START_VALUES = ("Startkoordinate Y:", 250, "", False, 0, 4000)
+RESOLUTION_VALUES = ("Auflösung:", 250, "pixel x pixel", False, "", "")
 
 
 class ValueRadioButton(qtw.QRadioButton):
@@ -46,17 +56,14 @@ class MainWindow(qtw.QMainWindow):
     def __init__(self):
         """MainWindow constructor.
 
-        This widget will be our main window.
+        This widget is be our main window.
         We'll define all the UI components in here.
         """
         super().__init__()
-        # Main UI code goes here
 
-        self.redLEDPxm = qtg.QPixmap(":/icons/led_red.png").scaled(16,16,qtc.Qt.KeepAspectRatio)
-        self.greenLEDPxm = qtg.QPixmap(":/icons/led_green.png").scaled(16,16,qtc.Qt.KeepAspectRatio)
 
         self.setWindowTitle(WINDOW_TITLE)
-        self.resize(INITIAL_WINDOW_HEIGHT, INITIAL_WINDOW_WIDTH)
+        self.resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT)
 
         self.menuBar = self.menuBar()
         self.fileMenu = self.menuBar.addMenu("Datei")
@@ -77,7 +84,7 @@ class MainWindow(qtw.QMainWindow):
         if ENABLE_FILE_TREE:
             self.openAction = qtw.QAction(
                 self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
-                "Dateispeicherort auswhälen",
+                "Dateispeicherort auswählen",
                 self,
                 triggered=self.showChooseSaveDirDialog
             )
@@ -86,24 +93,27 @@ class MainWindow(qtw.QMainWindow):
         # self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addAction(self.closeAction)
 
-        # statusbar
+        # Statusbar
         self.statusBar = qtw.QStatusBar(parent=self)
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage("Welcome to the 500€ RTM")
         self.scannerStatusLabel = qtw.QLabel("Standby")
         self.statusBar.addPermanentWidget(self.scannerStatusLabel)
 
-        # toolbar
+        # Top Tool bar
         # self.setupToolBar()
-        
-        
+
+        # Log
         self.setupLogDock()
 
+        # File Tree
         # self.setupFileTree()
 
+        # Tabs
         self.setupTabs()
 
-        self.setupExperimentDock()
+        # Parameters dock
+        self.setupParametersDock()
 
         if ENABLE_SPLASH_SCREEN:
             self.showSplashScreen()
@@ -138,7 +148,6 @@ class MainWindow(qtw.QMainWindow):
             """
         )
 
-        
         self.layout().setContentsMargins(128, 128, 128, 32)
 
         # End main UI code
@@ -146,10 +155,10 @@ class MainWindow(qtw.QMainWindow):
 
         if ENABLE_FILE_TREE:
             self.showIntroScreen()
- 
-    def setupExperimentDock(self):
+
+    def setupParametersDock(self):
         """Setup up the experiment dock widget"""
-        
+
         self.experimentDock = qtw.QDockWidget("Scan-Parameter")
         self.experimentDock.setTitleBarWidget(qtw.QWidget(self))
         self.experimentDock.setFeatures(qtw.QDockWidget.NoDockWidgetFeatures)
@@ -159,40 +168,53 @@ class MainWindow(qtw.QMainWindow):
         self.expDockWidgetContainer.setLayout(qtw.QVBoxLayout())
         self.experimentDock.setWidget(self.expDockWidgetContainer)
 
+        # z-Height Controller Parameters Widgets and layout
         self.piGroupBox = qtw.QGroupBox(f"{PID_PARAMETER_LABEL}", self)
         self.piGroupBox.setStyleSheet("QGroupBox {font-weight: bold;}")
         self.piGroupBox.resize(60, 180)
         self.piGroupBox.setLayout(qtw.QVBoxLayout())
         self.piGroupBox.layout().setAlignment(qtc.Qt.AlignCenter)
 
-        
-        self.biasVoltageRow = self.createParameterRow("Bias-Spannung", "0.1", "0.1 - 1.0 V", double=True, top=1.0, bottom=0.1)
-        self.pGainRow = self.createParameterRow("kP:", "2", "0-100000", double=True, bottom=0, top=100000)
-        self.iGainRow = self.createParameterRow("kI:", "0.5", "0-100000", double=True, bottom=0, top=100000)
-        self.zHeightRow = self.createParameterRow("Zielstrom:", "20", "10-100nA")
-        self.updateControlParametersBtn = qtw.QPushButton(f"{PID_PARAMETER_LABEL} aktualisieren", clicked=self.updateParametersHandler)
+        self.biasVoltageRow = self.createParameterRow(
+            BIAS_VOLTAGE_VALUES[0], f"{BIAS_VOLTAGE_VALUES[1]}", f"{BIAS_VOLTAGE_VALUES[4]} - {BIAS_VOLTAGE_VALUES[5]} {BIAS_VOLTAGE_VALUES[2]}", double=BIAS_VOLTAGE_VALUES[3], top=BIAS_VOLTAGE_VALUES[4], bottom=BIAS_VOLTAGE_VALUES[5])
+        self.pGainRow = self.createParameterRow(
+            PK_VALUES[0], f"{PK_VALUES[1]}", f"{PK_VALUES[4]} - {PK_VALUES[5]} {PK_VALUES[2]}", double=PK_VALUES[3], top=PK_VALUES[4], bottom=PK_VALUES[5])
+        self.iGainRow = self.createParameterRow(
+            IK_VALUES[0], f"{IK_VALUES[1]}", f"{IK_VALUES[4]} - {IK_VALUES[5]} {IK_VALUES[2]}", double=IK_VALUES[3], top=IK_VALUES[4], bottom=IK_VALUES[5])
+        self.zHeightRow = self.createParameterRow(
+            SETPOINT_VALUES[0], f"{SETPOINT_VALUES[1]}", f"{SETPOINT_VALUES[4]} - {SETPOINT_VALUES[5]} {SETPOINT_VALUES[2]}", double=SETPOINT_VALUES[3], top=SETPOINT_VALUES[4], bottom=SETPOINT_VALUES[5])
+        self.updateControlParametersBtn = qtw.QPushButton(
+            f"{PID_PARAMETER_LABEL} aktualisieren", clicked=self.updateParametersHandler)
 
-        self.piGroupBox.layout().addWidget(self.biasVoltageRow) # TODO : ADD TO SIMULATOR
+        self.piGroupBox.layout().addWidget(self.biasVoltageRow)  # TODO : ADD TO SIMULATOR
         self.piGroupBox.layout().addWidget(self.pGainRow)
         self.piGroupBox.layout().addWidget(self.iGainRow)
         self.piGroupBox.layout().addWidget(self.zHeightRow)
 
         self.piGroupBox.layout().addWidget(self.updateControlParametersBtn)
-        
 
+        # Scan Parameters Widgets and Layout
         self.scanGroupBox = qtw.QGroupBox(f"{SCAN_PARAMETER_LABEL}", self)
         self.scanGroupBox.setStyleSheet("QGroupBox {font-weight: bold;}")
         self.scanGroupBox.setLayout(qtw.QVBoxLayout())
 
-        self.xStartRow = self.createParameterRow("Startkoordinate X:","250", "0 - 4000")
-        self.yStartRow = self.createParameterRow("Startkoordinate Y:", "250", "0 - 4000")
-        self.xEndRow = self.createParameterRow("Auflösung", "250", "Pixel x Pixel")
+        self.xStartRow = self.createParameterRow(
+            X_START_VALUES[0], f"{X_START_VALUES[1]}", f"{X_START_VALUES[4]} - {X_START_VALUES[5]} {X_START_VALUES[2]}", double=X_START_VALUES[3], top=X_START_VALUES[4], bottom=X_START_VALUES[5])
+
+        self.yStartRow = self.createParameterRow(
+            Y_START_VALUES[0], f"{Y_START_VALUES[1]}", f"{Y_START_VALUES[4]} - {Y_START_VALUES[5]} {Y_START_VALUES[2]}", double=Y_START_VALUES[3], top=Y_START_VALUES[4], bottom=Y_START_VALUES[5])
+
+            
+        # refactored to resolution parameters
+        self.xEndRow = self.createParameterRow(
+            RESOLUTION_VALUES[0], f"{RESOLUTION_VALUES[1]}", f"{RESOLUTION_VALUES[4]} - {RESOLUTION_VALUES[5]} {RESOLUTION_VALUES[2]}", double=RESOLUTION_VALUES[3], top=RESOLUTION_VALUES[4], bottom=RESOLUTION_VALUES[5])
         # self.yEndRow = self.createParameterRow("Höhe", "500", "Pixel")
         self.scanGroupBox.layout().addWidget(self.xStartRow)
         self.scanGroupBox.layout().addWidget(self.yStartRow)
         self.scanGroupBox.layout().addWidget(self.xEndRow)
         # self.scanGroupBox.layout().addWidget(self.yEndRow)
 
+        # Direction Radio Group
         self.directionRow = qtw.QWidget()
         self.directionRow.setLayout(qtw.QHBoxLayout())
         self.directionRow.layout().addWidget(qtw.QLabel("relative Scan-Richtung:", self))
@@ -209,7 +231,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.scanGroupBox.layout().addWidget(self.directionRow)
 
-        ## remove
+        # TODO: add later
         # self.multiplierRow = self.createParameterRow(
         #     "DAC-Multiplikator", "1", "1 - 100")
         # self.scanGroupBox.layout().addWidget(self.multiplierRow)
@@ -221,10 +243,10 @@ class MainWindow(qtw.QMainWindow):
 
         self.controlGroupBox = qtw.QGroupBox("Scan-Controls", self)
         self.controlGroupBox.setStyleSheet("QGroupBox {font-weight: bold;}")
-        self.startBtn =  qtw.QPushButton("Start", clicked=self.startHandler )
+        self.startBtn = qtw.QPushButton("Start", clicked=self.startHandler)
         self.startBtn.setShortcut("Return")
-        self.pauseBtn =  qtw.QPushButton("Pause", clicked=self.pauseHandler)
-        self.stopBtn =  qtw.QPushButton("Stop", clicked=self.stopHandler)
+        self.pauseBtn = qtw.QPushButton("Pause", clicked=self.pauseHandler)
+        self.stopBtn = qtw.QPushButton("Stop", clicked=self.stopHandler)
         self.pauseBtn.setEnabled(False)
         self.stopBtn.setEnabled(False)
         self.controlGroupBox.setLayout(qtw.QVBoxLayout())
@@ -261,12 +283,13 @@ class MainWindow(qtw.QMainWindow):
         zHeight = float(self.zHeightRow.children()[2].text())
 
         if self.microscope != None:
-            self.microscope.updateControlParameters((biasV, pGain, iGain, zHeight))
+            self.microscope.updateControlParameters(
+                (biasV, pGain, iGain, zHeight))
             self.updateLog(f"{PID_PARAMETER_LABEL} aktualisiert.")
         else:
-            self.updateLog(f"RTM auswählen um {PID_PARAMETER_LABEL} zu aktualisieren.")
+            self.updateLog(
+                f"RTM auswählen um {PID_PARAMETER_LABEL} zu aktualisieren.")
 
-   
     def setupToolBar(self):
         """ DEPRECATED """
 
@@ -299,6 +322,8 @@ class MainWindow(qtw.QMainWindow):
         self.updateLog("Feature wurde noch nicht implementiert")
 
     def showIntroScreen(self):
+        """Sets up and displays the beta screen. This is disabled as it was a constant source of consusion
+        """
         self.introScreen = qtw.QMessageBox()
         self.introScreen.resize(126, 98)
         self.introScreen.setWindowTitle("Wilkommen!")
@@ -340,6 +365,8 @@ class MainWindow(qtw.QMainWindow):
             sys.exit()
 
     def setupFileTree(self):
+        """This function creates the File tree widget
+        """
         # self show Dialog
         # docks
         self.fileTreeDock = qtw.QDockWidget("Projektordner")
@@ -366,8 +393,10 @@ class MainWindow(qtw.QMainWindow):
         self.fileTreeWidget.layout().addWidget(self.treeView)
 
     def setupLogDock(self):
+        """ This function sets up the Log Dock and its styleing
+        """
         self.spiDock = qtw.QDockWidget("Log")
-        
+
         self.spiDock.setFeatures(qtw.QDockWidget.NoDockWidgetFeatures)
         self.addDockWidget(qtc.Qt.BottomDockWidgetArea, self.spiDock)
 
@@ -375,8 +404,8 @@ class MainWindow(qtw.QMainWindow):
         self.logWidget.setLayout(qtw.QVBoxLayout())
         self.spiDock.setWidget(self.logWidget)
 
-        self.logTextArea = qtw.QTextEdit("", readOnly=True)
-        self.logTextArea.setUndoRedoEnabled(False)
+        self.logTextArea = qtw.QTextEdit("", readOnly=True) 
+        self.logTextArea.setUndoRedoEnabled(False) # This disables the widgets history function
         self.logTextArea.setStyleSheet("""
                 QTextEdit { 
                     background: black;
@@ -386,9 +415,25 @@ class MainWindow(qtw.QMainWindow):
         self.logWidget.layout().addWidget(self.logTextArea)
 
     def updateLog(self, update):
+        """Slot function for updates to the logs
+
+        Args:
+            update ([type]): [description]
+        """
         self.logTextArea.append(update)
 
     def createParameterRow(self, label: str, placeholder: str, unitLabel: str, double=False, bottom=0.1, top=5.0) -> qtw.QWidget:
+        """Helper function which creates a parameter row with the given arguments
+
+        Args:
+            label (str): Label of field
+            placeholder (str): Default value
+            unitLabel (str): Unit of the Field
+            double (bool, optional): Decimal or Integer Value. Defaults to False.
+            bottom (float, optional): Lower end of allowed range. Defaults to 0.1.
+            top (float, optional): Upper end of allowed range. Defaults to 5.0.
+
+        """
         container = qtw.QWidget(self)
         container.setLayout(qtw.QHBoxLayout())
         container.layout().setAlignment(qtc.Qt.AlignCenter)
@@ -396,7 +441,7 @@ class MainWindow(qtw.QMainWindow):
         rowEdit = qtw.QLineEdit(placeholder)
         rowEdit.setMaximumWidth(30)
         if double:
-            validator = qtg.QDoubleValidator(bottom, top,2, parent=self)
+            validator = qtg.QDoubleValidator(bottom, top, 2, parent=self)
             validator.setNotation(qtg.QDoubleValidator.StandardNotation)
         else:
             validator = qtg.QIntValidator(self)
@@ -407,25 +452,30 @@ class MainWindow(qtw.QMainWindow):
         container.layout().addWidget(rowLbl)
         container.layout().addWidget(rowEdit)
         container.layout().addWidget(unitLbl)
-        # container.layout().addStretch()
 
         return container
 
     def saveScan(self):
+        """This function encases the save action functionality. 
+        For use in QAction
+        """
 
         if self.imgData != None:
             fileName = qtw.QFileDialog.getSaveFileName(
-                self, 
+                self,
                 "Datei speichern unter...",
                 "",
                 "TIFF Files (*.tif  *.ome.tif)")
-            tifffile.imsave(fileName[0], data=self.imgData, photometric="minisblack")
+            tifffile.imsave(
+                fileName[0], data=self.imgData, photometric="minisblack")
             self.updateLog(f"Scan wurder unter {fileName} gespeichert")
         else:
             self.updateLog("Es ist noch kein Scan vorhanden")
 
-    
     def showChooseSaveDirDialog(self):
+        """This functoin encases the save direction functionality for the file tree widget.
+        For use in QAction
+        """
         folderName = qtw.QFileDialog.getExistingDirectory(
             self,
             "Projektordner auswählen",
@@ -437,94 +487,30 @@ class MainWindow(qtw.QMainWindow):
             except Exception as e:
                 qtw.QMessageBox.critical(
                     f'Ordner konnte nicht geöffnet werden: {e}')
-            
-        
-    
+
     def setupTabs(self):
-        # tab containers
+        """ This functions sets up all the tabs
+        """
         self.tabWidget = qtw.QTabWidget()
-        
+
         self.setCentralWidget(self.tabWidget)
+
+        # positions the tab labels to the top of the container
         self.tabWidget.setTabPosition(qtw.QTabWidget.North)
-        
+
         self.prepContainer = qtw.QWidget()
+        self.prepContainer.setLayout(qtw.QHBoxLayout())
         self.scanContainer = qtw.QWidget()
-
-        self.prepContainer.setLayout(qtw.QVBoxLayout())
-        self.prepContainer.layout().setSpacing(36)
-
-        nData = 100
-        self.xData = np.arange(nData)
-        self.yData = np.zeros(nData)
-        self.prepCanvas = Canvas(self)
-        self.prepAxe = self.prepCanvas.fig.add_subplot(111)
-        self.prepAxe.plot(self.xData, self.yData, linewidth=4, color="r", label="Tunnelstrom")
-        self.prepAxe.legend()
-        self.prepAxe.set_ylim(0, 10e-8)
-
         
-
-        self.prepAxe.set_xlabel("t")
-        self.prepAxe.set_ylabel("Tunnelstrom")
-        self.prepAxe.autoscale(False)
-        self.prepCanvas.setSizePolicy(
-            qtw.QSizePolicy(qtw.QSizePolicy.Expanding,
-                            qtw.QSizePolicy.Expanding)
-        )
-
-        self.prepCanvas.canvas.draw()
-
-        self.prepLbl = qtw.QLabel("Vorbereitung")
-        self.prepLbl.setFont(qtg.QFont("SansSerif", 16, qtg.QFont.Bold))
-
-        # RTM Connectivity
-        self.prepDescrLbl = qtw.QLabel("Wählen Sie das RTM aus:")
-        self.prepDescrLbl.setStyleSheet("padding-left: 16px")
-        self.rtmSelectRow = qtw.QHBoxLayout()
-        self.rtmSelectRow.setSpacing(12)
-
-        self.rtmComboBox = qtw.QComboBox()
-        self.rtmComboBox.setStyleSheet("max-width: 128px")
-        # self.rtmStateLbl = qtw.QLabel("Status: ")
-        self.rtmStateLED = qtw.QLabel("Status")
-        self.rtmStateLED.setPixmap(self.redLEDPxm)
-        self.rtmBtn = qtw.QPushButton("Liste updaten")
-        self.rtmConnectBtn = qtw.QPushButton("Verbinden")
-        self.rtmComboBox.setStyleSheet("max-width: 128px")
-
-        self.rtmComboBox.addItem("Auswählen...")
-        self.rtmComboBox.model().item(0).setEnabled(False)
-        self.rtmComboBox.addItem("Simulator")
-
-        self.rtmSelectRow.addWidget(self.prepDescrLbl)
-        self.rtmSelectRow.addWidget(self.rtmComboBox)
-        self.rtmSelectRow.addWidget(self.rtmBtn)
-        self.rtmSelectRow.addWidget(self.rtmConnectBtn)
-        self.rtmSelectRow.addWidget(qtw.QLabel("Status:"))
-        self.rtmSelectRow.addWidget(self.rtmStateLED)
-        self.rtmSelectRow.addStretch()
-
-        self.rtmConnectBtn.clicked.connect(self.connectWithRTM)
-
-        self.prepCondDescrLbl = qtw.QLabel(
-            "Nähern Sie die Spitze am Mikroskop an das eingelegte Material an, bis ein Tunnelstrom fließt")
-        self.prepCondDescrLbl.setStyleSheet("margin-top:60px")
-        
-        self.prepCondDescrLbl.setFont(qtg.QFont("SansSerif", 14, qtg.QFont.Bold))
-
-        self.prepContainer.layout().addWidget(self.prepLbl)
-        self.prepContainer.layout().addLayout(self.rtmSelectRow)
-        self.prepContainer.layout().addWidget(self.prepCondDescrLbl)
-
-        # if rtm selected show anweisung
-
-        self.prepContainer.layout().addWidget(self.prepCanvas)
+        self.prepTabWidget = PreparationTabWidget()
+        self.prepTabWidget.rtmConnectBtn.clicked.connect(self.connectWithRTM)
+        self.prepContainer.layout().addWidget(self.prepTabWidget)
 
         self.scanContainer.setLayout(qtw.QHBoxLayout())
 
-        self.centrWidget = CentralPlotWidget()
-        self.scanContainer.layout().addWidget(self.centrWidget)
-        self.centrWidget.logMessage.connect(self.updateLog)
+        self.scanTabWidget = ScanTabWidget()
+        self.scanContainer.layout().addWidget(self.scanTabWidget)
+        self.scanTabWidget.logMessage.connect(self.updateLog)
 
         self.tabWidget.addTab(self.prepContainer, "Vorbereitung")
 
@@ -533,16 +519,16 @@ class MainWindow(qtw.QMainWindow):
     def updateScanCanvas(self, img):
         print("Updated Image")
         self.imgData = img
-        self.centrWidget.updateImage(self.imgData)
+        self.scanTabWidget.updateImage(self.imgData)
         self.statusBar.showMessage("Scan aktualisiert", 1000)
 
         # qtw.QApplication.allWidgets()
         # gc.collect()
-        
+
         # self.updateLog("Scan aktualisiert.")
 
     def connectWithRTM(self):
-        selected = self.rtmComboBox.currentIndex()
+        selected = self.prepTabWidget.rtmComboBox.currentIndex()
         if selected == 1:
             self.updateLog("Verbindung wird aufgebaut...")
             qtc.QTimer.singleShot(2000, lambda: self.showSimulator())
@@ -550,29 +536,13 @@ class MainWindow(qtw.QMainWindow):
             # init rtm connection
             return None
 
-    def updatePlot(self, emission):
-        # Drop off the first y element, append a new one.
-        if emission > 10e-8:
-            emission = 10e-8
-        self.yData = np.append(self.yData[1:], emission)
-        self.prepAxe.cla()  
-        self.prepAxe.plot(self.xData, self.yData, lw="4", color='g', label="Tunnelstrom")
-        self.prepAxe.axhline(y=self.microscope.model.getTargetCurrent(), linestyle="--", label="Zieltunnelstrom")   
-        self.prepAxe.legend() 
-
-        self.prepAxe.set_ylim(0, 1e-7)
-
-        self.prepAxe.set_xlabel("t")
-        self.prepAxe.set_ylabel("Tunnelstrom")
-        self.prepCanvas.canvas.draw()
-        
 
     def showSimulator(self):
         if self.microscope is None:
             self.microscope = SimulatorWindow()
-            self.microscope.transmitTunnelCurrent.connect(self.updatePlot)
+            self.microscope.transmitTunnelCurrent.connect(self.prepTabWidget.updatePlot)
             self.microscope.logMessage.connect(self.updateLog)
-            self.rtmStateLED.setPixmap(self.greenLEDPxm)
+            self.prepTabWidget.updateLED(True)
             self.microscope.scanFinished.connect(self.stopHandler)
             self.updateLog("Verbindung hergestellt!")
             self.microscope.show()
@@ -582,26 +552,25 @@ class MainWindow(qtw.QMainWindow):
     def startHandler(self):
 
         # disable start button
-        
+
         params = self.getExperimentParameters()
-        
-        
+
         if self.microscope is None:
             qtw.QMessageBox.warning(self,
                                     "Mikroskop Verbinden!",
                                     "Es muss eine Verbindung zu einem Rastertunnelmikroskop bestehen um einen Scan zu starten!")
         elif self.isMidScan:
-            
-            self.statusBar.showMessage("Scan fortgesetzt",10)
+
+            self.statusBar.showMessage("Scan fortgesetzt", 10)
             self.microscope.transmitScanImg.connect(self.updateScanCanvas)
             self.startBtn.setEnabled(False)
             self.stopBtn.setEnabled(True)
             self.microscope.resumeScan()
-            
+
             self.updateLog(f"Scan wird fortgesetzt.")
         else:
-            # self.centrWidget.initPlotUI()
-            self.statusBar.showMessage("Scan gestarted",10)
+            # self.scanTabWidget.initPlotUI()
+            self.statusBar.showMessage("Scan gestarted", 10)
             self.microscope.transmitScanImg.connect(self.updateScanCanvas)
 
             self.startBtn.setEnabled(False)
@@ -610,12 +579,10 @@ class MainWindow(qtw.QMainWindow):
             self.microscope.startScan(params)
             self.isMidScan = True
             self.updateLog(f"Scan mit {params} gestartet")
-                
+
             if self.tabWidget.currentIndex() == 0:
-                self.updateLog("Scan wurde gestartet - bitte in den Scan Tab wechseln")
-
-        
-
+                self.updateLog(
+                    "Scan wurde gestartet - bitte in den Scan Tab wechseln")
 
     def pauseHandler(self):
         self.microscope.pauseScan()
@@ -632,8 +599,6 @@ class MainWindow(qtw.QMainWindow):
         self.microscope.transmitScanImg.disconnect(self.updateScanCanvas)
 
 
-
-
 if __name__ == '__main__':
 
     app = qtw.QApplication(sys.argv)
@@ -641,7 +606,4 @@ if __name__ == '__main__':
     # if it goes out of scope, it will be destroyed.
     mw = MainWindow()
 
-
-
     sys.exit(app.exec_())
-    

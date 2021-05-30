@@ -10,7 +10,6 @@ from PySide2 import QtCore as qtc
 from PySide2 import QtGui as qtg
 from PySide2 import QtWidgets as qtw
 
-from .resources import *
 from .canvas import Canvas
 import numpy as np
 
@@ -52,7 +51,10 @@ class CustomToolbar(NavigationToolbar2QT):
 
 
 
-class CentralPlotWidget(qtw.QWidget):
+class ScanTabWidget(qtw.QWidget):
+    """This Class encompasses all widgets of the Scan Tab
+
+    """
     coordinates = []
     points = []
     cid = None
