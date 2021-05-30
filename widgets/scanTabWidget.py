@@ -226,8 +226,8 @@ class ScanTabWidget(qtw.QWidget):
     def calculateLineProfile(self):
         """ Executes the Line profile action
         """
-        x0, y0 = self.coordinates[0][0], self.coordinates[0][1]
-        x1, y1 = self.coordinates[1][0], self.coordinates[1][1]
+        x0, y0 = self.coordinates[0][1], self.coordinates[0][0]
+        x1, y1 = self.coordinates[1][1], self.coordinates[1][0]
         length = int(np.hypot(x1-x0, y1-y0))
 
         xLine, yLine = np.linspace(x0, x1, length), np.linspace(y0, y1, length)
@@ -246,9 +246,9 @@ class ScanTabWidget(qtw.QWidget):
 
     def levelImageByPlane(self):
         """ Executes the plane level action"""
-        x0, y0 = self.coordinates[0][0], self.coordinates[0][1]
-        x1, y1 = self.coordinates[1][0], self.coordinates[1][1]
-        x2, y2 = self.coordinates[2][0], self.coordinates[2][1]
+        x0, y0 = self.coordinates[0][1], self.coordinates[0][0]
+        x1, y1 = self.coordinates[1][1], self.coordinates[1][0]
+        x2, y2 = self.coordinates[2][1], self.coordinates[2][0]
 
         p1 = np.array([x0, y0, self.image[int(x0), int(y0)]])
         p2 = np.array([x1, y1, self.image[int(x1), int(y1)]])

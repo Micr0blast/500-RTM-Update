@@ -3,15 +3,14 @@ import sys
 from PySide2 import QtWidgets as qtw
 from PySide2 import QtGui as qtg
 from PySide2 import QtCore as qtc
-import numpy as np
 import tifffile
 
 from widgets.resources import *
 
 from widgets.scanTabWidget import ScanTabWidget
+from widgets.fileTreeWidget import FileTreeWidget
 from widgets.preparationTabWidget import PreparationTabWidget
 from simulator.simulator import SimulatorWindow
-from widgets.canvas import Canvas
 
 ENABLE_FILE_TREE = False
 ENABLE_SPLASH_SCREEN = False
@@ -65,40 +64,12 @@ class MainWindow(qtw.QMainWindow):
         self.setWindowTitle(WINDOW_TITLE)
         self.resize(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT)
 
-        self.menuBar = self.menuBar()
-        self.fileMenu = self.menuBar.addMenu("Datei")
-        self.helpMenu = self.menuBar.addMenu("Hilfe")
-
-        self.closeAction = qtw.QAction(
-            self.style().standardIcon(qtw.QStyle.SP_DockWidgetCloseButton),
-            "Beenden",
-            self,
-            triggered=self.close
-        )
-        self.saveAction = qtw.QAction(
-            self.style().standardIcon(qtw.QStyle.SP_DriveCDIcon),
-            "Scan Speichern...",
-            self,
-            triggered=self.saveScan
-        )
-        if ENABLE_FILE_TREE:
-            self.openAction = qtw.QAction(
-                self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
-                "Dateispeicherort auswählen",
-                self,
-                triggered=self.showChooseSaveDirDialog
-            )
-
-        # self.fileMenu.addAction(self.openAction)
-        # self.fileMenu.addAction(self.saveAction)
-        self.fileMenu.addAction(self.closeAction)
+        # Top menu bar
+        self.setupTopBarMenus()
+        
 
         # Statusbar
-        self.statusBar = qtw.QStatusBar(parent=self)
-        self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage("Welcome to the 500€ RTM")
-        self.scannerStatusLabel = qtw.QLabel("Standby")
-        self.statusBar.addPermanentWidget(self.scannerStatusLabel)
+        self.setupStatusBar()
 
         # Top Tool bar
         # self.setupToolBar()
@@ -106,8 +77,6 @@ class MainWindow(qtw.QMainWindow):
         # Log
         self.setupLogDock()
 
-        # File Tree
-        # self.setupFileTree()
 
         # Tabs
         self.setupTabs()
@@ -115,6 +84,7 @@ class MainWindow(qtw.QMainWindow):
         # Parameters dock
         self.setupParametersDock()
 
+        # enable beta splash screen
         if ENABLE_SPLASH_SCREEN:
             self.showSplashScreen()
 
@@ -154,7 +124,51 @@ class MainWindow(qtw.QMainWindow):
         self.show()
 
         if ENABLE_FILE_TREE:
-            self.showIntroScreen()
+            self.showFileDirScreen()
+            self.setupFileTree()
+
+    def setupTopBarMenus(self):
+        """Sets up the top bar menus
+        """
+        self.menuBar = self.menuBar()
+        self.fileMenu = self.menuBar.addMenu("Datei")
+        self.helpMenu = self.menuBar.addMenu("Hilfe")
+
+        self.closeAction = qtw.QAction(
+            self.style().standardIcon(qtw.QStyle.SP_DockWidgetCloseButton),
+            "Beenden",
+            self,
+            triggered=self.close
+        )
+        
+        self.fileMenu.addAction(self.closeAction)
+
+        self.saveAction = qtw.QAction(
+            self.style().standardIcon(qtw.QStyle.SP_DriveCDIcon),
+            "Scan Speichern...",
+            self,
+            triggered=self.saveScan
+        )
+        if ENABLE_FILE_TREE:
+            self.openAction = qtw.QAction(
+                self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
+                "Dateispeicherort auswählen",
+                self,
+                triggered=self.showChooseSaveDirDialog
+            )
+            
+
+        # self.fileMenu.addAction(self.openAction)
+        # self.fileMenu.addAction(self.saveAction)
+
+    def setupStatusBar(self):
+        """Sets up the status bar
+        """
+        self.statusBar = qtw.QStatusBar(parent=self)
+        self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage("Welcome to the 500€ RTM")
+        self.scannerStatusLabel = qtw.QLabel("Standby")
+        self.statusBar.addPermanentWidget(self.scannerStatusLabel)
 
     def setupParametersDock(self):
         """Setup up the experiment dock widget"""
@@ -260,13 +274,18 @@ class MainWindow(qtw.QMainWindow):
         self.expDockWidgetContainer.layout().addStretch()
 
     def getExperimentParameters(self):
-        biasV = float(self.biasVoltageRow.children()[2].text())
+        """Extracts all scan related parameters and returns them as a tuple
+
+        Returns:
+            tuple of parameters
+        """
         pGain = float(self.pGainRow.children()[2].text())
         iGain = float(self.iGainRow.children()[2].text())
         zHeight = float(self.zHeightRow.children()[2].text())
         xStart = int(self.xStartRow.children()[2].text())
         yStart = int(self.yStartRow.children()[2].text())
         xEnd = int(self.xEndRow.children()[2].text())
+        biasV = float(self.biasVoltageRow.children()[2].text())
         # yEnd = int(self.yEndRow.children()[2].text())
         yEnd = xEnd
 
@@ -277,6 +296,8 @@ class MainWindow(qtw.QMainWindow):
         return (pGain, iGain, zHeight, xStart, yStart, xEnd, yEnd, direction, velocity, biasV)
 
     def updateParametersHandler(self):
+        """This function handles the PID-parameter update functionality
+        """
         biasV = float(self.biasVoltageRow.children()[2].text())
         pGain = float(self.pGainRow.children()[2].text())
         iGain = float(self.iGainRow.children()[2].text())
@@ -289,108 +310,6 @@ class MainWindow(qtw.QMainWindow):
         else:
             self.updateLog(
                 f"RTM auswählen um {PID_PARAMETER_LABEL} zu aktualisieren.")
-
-    def setupToolBar(self):
-        """ DEPRECATED """
-
-        self.toolBar = qtw.QToolBar("Scan")
-        self.toolBar.setMovable(False)
-        self.toolBar.setFloatable(False)
-
-        self.lineProfileAction = qtw.QAction(
-            "Linienprofil erzeugen",
-            self,
-            triggered=self.actionNotImplemented
-        )
-        self.adjustLevelsAction = qtw.QAction(
-            "Graustufen anpassen",
-            self,
-            triggered=self.actionNotImplemented
-        )
-        self.levelPlaneAction = qtw.QAction(
-            "Ebenen angleichen",
-            self,
-            triggered=self.actionNotImplemented
-        )
-        self.toolBar.addAction(self.lineProfileAction)
-        self.toolBar.addAction(self.adjustLevelsAction)
-        self.toolBar.addAction(self.levelPlaneAction)
-
-        self.addToolBar(qtc.Qt.TopToolBarArea, self.toolBar)
-
-    def actionNotImplemented(self):
-        self.updateLog("Feature wurde noch nicht implementiert")
-
-    def showIntroScreen(self):
-        """Sets up and displays the beta screen. This is disabled as it was a constant source of consusion
-        """
-        self.introScreen = qtw.QMessageBox()
-        self.introScreen.resize(126, 98)
-        self.introScreen.setWindowTitle("Wilkommen!")
-        self.introScreen.setText("Wilkommen zum 500€-RTM GUI")
-        self.introScreen.setInformativeText(
-            "Als erstes müssen Sie einen Ordner festlegen,"
-            "in dem die Projektdaten gespeichert werden sollen"
-        )
-
-        self.introScreen.setWindowModality(qtc.Qt.WindowModal)
-        self.introScreen.addButton("Ordner auswählen", qtw.QMessageBox.YesRole)
-        self.introScreen.addButton(qtw.QMessageBox.Close)
-
-        response = self.introScreen.exec_()
-        if response == 0:
-            self.showChooseSaveDirDialog()
-
-    def showSplashScreen(self):
-        self.splashScreen = qtw.QMessageBox()
-        self.splashScreen.setWindowTitle("500€-RTM GIU")
-        self.splashScreen.setText("Beta Software Warning!")
-        self.splashScreen.setInformativeText(
-            "This is very beta software, "
-            "are you really sure you want to use it?"
-        )
-
-        self.splashScreen.setDetailedText(
-            "This Scan UI was written for educational purpose for the 500€-RTM project"
-        )
-
-        # set to modal, otherwise the dialog won't return a response
-        self.splashScreen.setWindowModality(qtc.Qt.WindowModal)
-        self.splashScreen.addButton(qtw.QMessageBox.Yes)
-        self.splashScreen.addButton(qtw.QMessageBox.Abort)
-
-        response = self.splashScreen.exec_()
-        if response == qtw.QMessageBox.Abort:
-            self.close()
-            sys.exit()
-
-    def setupFileTree(self):
-        """This function creates the File tree widget
-        """
-        # self show Dialog
-        # docks
-        self.fileTreeDock = qtw.QDockWidget("Projektordner")
-        self.addDockWidget(qtc.Qt.LeftDockWidgetArea, self.fileTreeDock)
-        self.fileTreeDock.setFeatures(
-            qtw.QDockWidget.DockWidgetClosable
-        )
-
-        # filetree
-        self.fileTreeWidget = qtw.QWidget()
-        self.fileTreeWidget.setLayout(qtw.QHBoxLayout())
-        self.fileTreeDock.setWidget(self.fileTreeWidget)
-        self.fileModel = qtw.QFileSystemModel()
-        self.fileModel.setResolveSymlinks(False)
-        self.fileModel.setRootPath(qtc.QDir.homePath())
-        self.fileModel.setNameFilters(
-            ['*.ome.tif', '*.ome.tiff', 'ome.tf2', 'ome.tf8', 'ome.btf'])
-        self.treeView = qtw.QTreeView()
-        self.treeView.setModel(self.fileModel)
-        self.treeView.setIndentation(10)
-        self.treeView.setSortingEnabled(True)
-        self.treeView.setWindowTitle("Projektordner")
-
-        self.fileTreeWidget.layout().addWidget(self.treeView)
 
     def setupLogDock(self):
         """ This function sets up the Log Dock and its styleing
@@ -489,13 +408,12 @@ class MainWindow(qtw.QMainWindow):
                     f'Ordner konnte nicht geöffnet werden: {e}')
 
     def setupTabs(self):
-        """ This functions sets up all the tabs
+        """ This functions sets up all the tabs and connections
         """
         self.tabWidget = qtw.QTabWidget()
 
         self.setCentralWidget(self.tabWidget)
 
-        # positions the tab labels to the top of the container
         self.tabWidget.setTabPosition(qtw.QTabWidget.North)
 
         self.prepContainer = qtw.QWidget()
@@ -517,27 +435,32 @@ class MainWindow(qtw.QMainWindow):
         self.tabWidget.addTab(self.scanContainer, "Scans")
 
     def updateScanCanvas(self, img):
-        print("Updated Image")
+        """Slot function to handle image updates to the Scan canvas
+
+        Args:
+            img: img data in 3d array
+        """
         self.imgData = img
         self.scanTabWidget.updateImage(self.imgData)
         self.statusBar.showMessage("Scan aktualisiert", 1000)
 
-        # qtw.QApplication.allWidgets()
-        # gc.collect()
-
-        # self.updateLog("Scan aktualisiert.")
-
     def connectWithRTM(self):
+        """This function handles connecting to the chosen RTM
+
+        """
         selected = self.prepTabWidget.rtmComboBox.currentIndex()
-        if selected == 1:
+        if selected == 1: # if simulator is chosen
             self.updateLog("Verbindung wird aufgebaut...")
             qtc.QTimer.singleShot(2000, lambda: self.showSimulator())
         else:
+            # TODO Add connection to hardware prototype code here
             # init rtm connection
-            return None
+            pass
 
 
     def showSimulator(self):
+        """This function handles showing the simulator and connecting related signals
+        """
         if self.microscope is None:
             self.microscope = SimulatorWindow()
             self.microscope.transmitTunnelCurrent.connect(self.prepTabWidget.updatePlot)
@@ -550,8 +473,8 @@ class MainWindow(qtw.QMainWindow):
             self.microscope.show()
 
     def startHandler(self):
-
-        # disable start button
+        """This function handles stop and resume button functionality
+        """
 
         params = self.getExperimentParameters()
 
@@ -569,7 +492,6 @@ class MainWindow(qtw.QMainWindow):
 
             self.updateLog(f"Scan wird fortgesetzt.")
         else:
-            # self.scanTabWidget.initPlotUI()
             self.statusBar.showMessage("Scan gestarted", 10)
             self.microscope.transmitScanImg.connect(self.updateScanCanvas)
 
@@ -585,18 +507,109 @@ class MainWindow(qtw.QMainWindow):
                     "Scan wurde gestartet - bitte in den Scan Tab wechseln")
 
     def pauseHandler(self):
+        """This function handles pause button functionality
+        """
         self.microscope.pauseScan()
         self.startBtn.setEnabled(True)
         self.pauseBtn.setEnabled(False)
+        self.microscope.transmitScanImg.disconnect(self.updateScanCanvas)
         self.stopBtn.setEnabled(True)
 
     def stopHandler(self):
+        """This function handles stop button functionality
+        """
         self.isMidScan = False
         self.startBtn.setEnabled(True)
         self.pauseBtn.setEnabled(False)
         self.stopBtn.setEnabled(False)
         self.microscope.stopScan()
         self.microscope.transmitScanImg.disconnect(self.updateScanCanvas)
+
+###  functions below are used in current iteration
+
+    def setupToolBar(self):
+        """ DEPRECATED """
+
+        self.toolBar = qtw.QToolBar("Scan")
+        self.toolBar.setMovable(False)
+        self.toolBar.setFloatable(False)
+
+        self.lineProfileAction = qtw.QAction(
+            "Linienprofil erzeugen",
+            self,
+            triggered=self.actionNotImplemented
+        )
+        self.adjustLevelsAction = qtw.QAction(
+            "Graustufen anpassen",
+            self,
+            triggered=self.actionNotImplemented
+        )
+        self.levelPlaneAction = qtw.QAction(
+            "Ebenen angleichen",
+            self,
+            triggered=self.actionNotImplemented
+        )
+        self.toolBar.addAction(self.lineProfileAction)
+        self.toolBar.addAction(self.adjustLevelsAction)
+        self.toolBar.addAction(self.levelPlaneAction)
+
+        self.addToolBar(qtc.Qt.TopToolBarArea, self.toolBar)
+
+    def actionNotImplemented(self):
+        self.updateLog("Feature wurde noch nicht implementiert")
+
+    def showFileDirScreen(self):
+        """Sets up and displays the file dir select screen.
+        """
+        self.introScreen = qtw.QMessageBox()
+        self.introScreen.resize(126, 98)
+        self.introScreen.setWindowTitle("Wilkommen!")
+        self.introScreen.setText("Wilkommen zum 500€-RTM GUI")
+        self.introScreen.setInformativeText(
+            "Als erstes müssen Sie einen Ordner festlegen,"
+            "in dem die Projektdaten gespeichert werden sollen"
+        )
+
+        self.introScreen.setWindowModality(qtc.Qt.WindowModal)
+        self.introScreen.addButton("Ordner auswählen", qtw.QMessageBox.YesRole)
+        self.introScreen.addButton(qtw.QMessageBox.Close)
+
+        response = self.introScreen.exec_()
+        if response == 0:
+            self.showChooseSaveDirDialog()
+
+    def showSplashScreen(self):
+        """Sets up and displays the beta screen. This is disabled as it was a constant source of consusion
+        """
+        self.splashScreen = qtw.QMessageBox()
+        self.splashScreen.setWindowTitle("500€-RTM GIU")
+        self.splashScreen.setText("Beta Software Warning!")
+        self.splashScreen.setInformativeText(
+            "This is very beta software, "
+            "are you really sure you want to use it?"
+        )
+
+        self.splashScreen.setDetailedText(
+            "This Scan UI was written for educational purpose for the 500€-RTM project"
+        )
+
+        # set to modal, otherwise the dialog won't return a response
+        self.splashScreen.setWindowModality(qtc.Qt.WindowModal)
+        self.splashScreen.addButton(qtw.QMessageBox.Yes)
+        self.splashScreen.addButton(qtw.QMessageBox.Abort)
+
+        response = self.splashScreen.exec_()
+        if response == qtw.QMessageBox.Abort:
+            self.close()
+            sys.exit()
+
+    def setupFileTree(self):
+        """This function creates the File tree widget
+        """
+        self.fileTreeDock = FileTreeWidget()
+        self.addDockWidget(qtc.Qt.LeftDockWidgetArea, self.fileTreeDock)
+
+        
 
 
 if __name__ == '__main__':
