@@ -25,7 +25,8 @@ CUSTOM_TOOL_LABEL = "Destruktive Werkzeuge"
 GRAPH_FONTS = "Sans Serif"
 
 MODE_LINE_PROFILE = 1
-MODE_PLANE_PROFILE = 2
+MODE_PLANE_LEVEL = 2
+MODE_LINE_MEASURE = 3
 
 
 LINE_PROFILE_TOOLTIP = "Linienprofil ermitteln"
@@ -36,6 +37,10 @@ PLANE_LEVEL_STARTED_LOG= "Ebene-begradigen-Werkzeug gestartet - 3 Punkte im Scan
 PLANE_LEVEL_EXECUTED_LOG = "Ebene erfolgreich begradigt"
 DATA_RESET_TOOLTIP = "Bilddaten zurücksetzen"
 DATA_RESET_LOG = "Scan wurde zurückgesetzt"
+LINE_MEASURE_TOOLTIP = "Distanz messen"
+LINE_MEASURE_STARTED_LOG = "Vermessungs-Werkzeug gestartet - 2 Punkte im Scan auswählen..."
+LINE_MEASURE_EXECUTED_LOG = "Linie erfolgreich vermessen: Länge = {length:.2f}"
+
 
 class CustomToolbar(NavigationToolbar2QT):
     """Custom Toolbar to remove tools included in base NavigationTOolbar
@@ -57,6 +62,7 @@ class ScanTabWidget(qtw.QWidget):
     """
     coordinates = []
     points = []
+    measurement = None
     cid = None
     mode = 0
     image = []
@@ -117,6 +123,13 @@ class ScanTabWidget(qtw.QWidget):
             LINE_PROFILE_TOOLTIP,
             self,
             triggered=self.startLineProfile)
+
+        self.lineMeasureAction = qtw.QAction(
+            qtg.QIcon(":icons/line_measure_btn.png"),
+            LINE_MEASURE_TOOLTIP,
+            self,
+            triggered = self.startLineMeasure
+        )
         self.planeLevelAction = qtw.QAction(
             qtg.QIcon(":/icons/plane_level_btn.png"),
             PLANE_LEVEL_TOOLTIP,
@@ -133,6 +146,7 @@ class ScanTabWidget(qtw.QWidget):
         self.scanCanvas.toolbar.addAction(self.lineProfileAction)
         self.scanCanvas.toolbar.addAction(self.planeLevelAction)
         self.scanCanvas.toolbar.addAction(self.resetImageAction)
+        self.scanCanvas.toolbar.addAction(self.lineMeasureAction)
 
         self.scanCanvas.layout.addWidget(self.scanCanvas.toolbar)
 
@@ -161,6 +175,10 @@ class ScanTabWidget(qtw.QWidget):
             [point.pop(0).remove() for point in self.points]
             print(len(self.points))
             self.points = []
+        if self.measurement != None:
+            line = self.measurement.pop(0)
+            line.remove()
+            self.measurement = None
 
     def resetImage(self):
         """Resets the Scan data back to the image received by the STM
@@ -181,6 +199,18 @@ class ScanTabWidget(qtw.QWidget):
         self.cid = self.scanCanvas.canvas.mpl_connect("button_press_event", self.onclick)
         self.mode = MODE_LINE_PROFILE
     
+    def startLineMeasure(self):
+        """Initiates the line measurement tool
+        """
+        qtw.QApplication.setOverrideCursor(qtg.QCursor(qtc.Qt.CrossCursor))
+        if self.cid != None:
+            self.scanCanvas.canvas.mpl_disconnect(self.cid)
+        self.removeToolPointsFromImage()
+        self.logMessage.emit(LINE_MEASURE_STARTED_LOG)
+        self.cid = self.scanCanvas.canvas.mpl_connect("button_press_event", self.onclick)
+        self.mode = MODE_LINE_MEASURE
+
+    
     def startPlaneLevel(self):
         """Initiates the Plane Level Tool
         """
@@ -193,7 +223,7 @@ class ScanTabWidget(qtw.QWidget):
         self.logMessage.emit(PLANE_LEVEL_STARTED_LOG)
 
         self.cid = self.scanCanvas.canvas.mpl_connect("button_press_event", self.onclick)
-        self.mode = MODE_PLANE_PROFILE
+        self.mode = MODE_PLANE_LEVEL
 
 
 
@@ -218,10 +248,16 @@ class ScanTabWidget(qtw.QWidget):
             if len(self.coordinates) == 2:
                 self.scanCanvas.fig.canvas.mpl_disconnect(self.cid)
                 self.calculateLineProfile()
-        elif self.mode == MODE_PLANE_PROFILE:
+        elif self.mode == MODE_PLANE_LEVEL:
             if len(self.coordinates) == 3:
                 self.scanCanvas.fig.canvas.mpl_disconnect(self.cid)
                 self.levelImageByPlane()
+        elif self.mode == MODE_LINE_MEASURE:
+            if len(self.coordinates) == 2:
+                self.scanCanvas.fig.canvas.mpl_disconnect(self.cid)
+                self.calculateLineMeasure()
+
+
 
     def calculateLineProfile(self):
         """ Executes the Line profile action
@@ -243,6 +279,22 @@ class ScanTabWidget(qtw.QWidget):
         self.reset()
         self.logMessage.emit(LINE_PROFILE_EXECUTED_LOG)
         return
+
+    def calculateLineMeasure(self):
+        """ Executes the Line measurement action
+        """
+        x0, y0 = self.coordinates[0][0], self.coordinates[0][1]
+        x1, y1 = self.coordinates[1][0], self.coordinates[1][1]
+        print(x0, y0)
+        print(x1, y1)
+        length = np.hypot(x1-x0, y1-y0)
+
+        self.measurement = self.scanAxe.plot([x0, x1],[y0, y1], linestyle="--", color="r", lw="2")
+        self.scanCanvas.canvas.draw()
+        self.reset()
+        self.logMessage.emit(LINE_MEASURE_EXECUTED_LOG.format(length=length))
+        return
+
 
     def levelImageByPlane(self):
         """ Executes the plane level action"""
