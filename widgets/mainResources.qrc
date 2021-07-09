@@ -6,5 +6,6 @@
         <file alias="line_profile_btn.png">img/LINE_PROFILE_BTN.png</file>
         <file alias="plane_level_btn.png">img/PLANE_LEVEL_BTN.png</file>
         <file alias="reset_btn.png">img/RESET_BTN.png</file>
+        <file alias="line_measure_btn.png">img/LINE_MEASUREMENT_BTN.png</file>
     </qresource>
 </RCC>
