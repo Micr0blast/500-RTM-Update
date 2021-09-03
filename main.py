@@ -482,6 +482,14 @@ class MainWindow(qtw.QMainWindow):
             qtw.QMessageBox.warning(self,
                                     "Mikroskop Verbinden!",
                                     "Es muss eine Verbindung zu einem Rastertunnelmikroskop bestehen um einen Scan zu starten!")
+<<<<<<< Updated upstream
+=======
+        elif self.microscope == 1:
+            params = list(self.getExperimentParameters(forSubprocess=True))
+            params.insert(0, PATH_TO_SCRIPT)
+            subprocess.call(params)
+            
+>>>>>>> Stashed changes
         elif self.isMidScan:
 
             self.statusBar.showMessage("Scan fortgesetzt", 10)
