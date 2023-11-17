@@ -18,9 +18,4 @@ In order to run this GUI a few things are needed.
 - To start the GUI then run
   `python main.py`
   in the root directory.
-  Running it from somehwere else will break the relative pathing for the simulator's images.
-  
-- If you want to run it from anywhere, go into 
-`simulator/simulatorModel.py` and change the PATH_TO_IMAGES to the absolute path of `simulator/img` for your system.
 
-NOTE: Qt resource files were considered and tested but resulted in a filesize of over 150mb.
