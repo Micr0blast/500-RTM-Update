@@ -2,9 +2,9 @@ import matplotlib
 matplotlib.use("Qt5Agg")
 
 
-from PySide2 import QtCore as qtc
-from PySide2 import QtGui as qtg
-from PySide2 import QtWidgets as qtw
+from PySide6 import QtCore as qtc
+from PySide6 import QtGui as qtg
+from PySide6 import QtWidgets as qtw
 
 from .canvas import Canvas
 from .resources import *

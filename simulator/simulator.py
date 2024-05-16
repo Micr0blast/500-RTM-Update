@@ -1,6 +1,7 @@
 import sys
-from PySide2 import QtWidgets as qtw
-from PySide2 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui   as qtg
+from PySide6 import QtCore as qtc
 
 from simulator.view.simulatorView import SimulatorView
 from simulator.model.simulatorModel import LOWER_CURRENT_BOUND, PATH_TO_IMAGES, SimulatorModel, UPPER_CURRENT_BOUND
@@ -98,7 +99,7 @@ class SimulatorWindow(qtw.QMainWindow):
         """
         menuBar = self.menuBar()
         self.fileMenu = menuBar.addMenu('File')
-        self.closeAction = qtw.QAction(
+        self.closeAction = qtg.QAction(
             self.style().standardIcon(qtw.QStyle.SP_DockWidgetCloseButton),
             "Beenden",
             self,

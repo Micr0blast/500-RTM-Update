@@ -6,9 +6,9 @@ matplotlib.use("Qt5Agg")
 
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
-from PySide2 import QtCore as qtc
-from PySide2 import QtGui as qtg
-from PySide2 import QtWidgets as qtw
+from PySide6 import QtCore as qtc
+from PySide6 import QtGui as qtg
+from PySide6 import QtWidgets as qtw
 
 from .canvas import Canvas
 import numpy as np
@@ -118,26 +118,26 @@ class ScanTabWidget(qtw.QWidget):
         self.scanCanvas.toolbar.addWidget(qtw.QLabel(CUSTOM_TOOL_LABEL))
 
         
-        self.lineProfileAction =  qtw.QAction(
+        self.lineProfileAction =  qtg.QAction(
             qtg.QIcon(":/icons/line_profile_btn.png"),
             LINE_PROFILE_TOOLTIP,
             self,
             triggered=self.startLineProfile)
 
-        self.lineMeasureAction = qtw.QAction(
+        self.lineMeasureAction = qtg.QAction(
             qtg.QIcon(":icons/line_measure_btn.png"),
             LINE_MEASURE_TOOLTIP,
             self,
             triggered = self.startLineMeasure
         )
-        self.planeLevelAction = qtw.QAction(
+        self.planeLevelAction = qtg.QAction(
             qtg.QIcon(":/icons/plane_level_btn.png"),
             PLANE_LEVEL_TOOLTIP,
             self,
             triggered = self.startPlaneLevel
         )
 
-        self.resetImageAction = qtw.QAction(
+        self.resetImageAction = qtg.QAction(
             qtg.QIcon(":/icons/reset_btn"),
             DATA_RESET_TOOLTIP,
             self,

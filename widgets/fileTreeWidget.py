@@ -1,5 +1,5 @@
-from PySide2 import QtCore as qtc
-from PySide2 import QtWidgets as qtw
+from PySide6 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
 
 FILE_TREE_TITLE = "Projektordner"
 

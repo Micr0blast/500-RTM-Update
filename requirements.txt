@@ -1,8 +1,8 @@
 
 Pillow == 8.2.0
 
-PySide2 == 5.15.2
-matplotlib == 3.4.1
-numpy == 1.19.0
+PySide6
+matplotlib
+numpy
 simple_pid == 1.0.0
 tifffile == 2021.3.17

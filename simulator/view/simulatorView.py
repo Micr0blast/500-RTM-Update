@@ -1,7 +1,7 @@
 
-from PySide2 import QtWidgets as qtw
-from PySide2 import QtGui as qtg
-from PySide2 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui as qtg
+from PySide6 import QtCore as qtc
 
 from .resources import *
 
@@ -47,7 +47,7 @@ class SimulatorView(qtw.QWidget):
         self.centralLayout = qtw.QVBoxLayout()
         self.dialLayout = qtw.QHBoxLayout()
         
-        self.simulatorPxm = qtg.QPixmap(":/images/rtm_top.png").scaled(300,500,qtc.Qt.KeepAspectRatio, transformMode = qtc.Qt.SmoothTransformation)
+        self.simulatorPxm = qtg.QPixmap(":/images/rtm_top.png").scaled(300,500,qtc.Qt.KeepAspectRatio, mode= qtc.Qt.SmoothTransformation)
         self.simulatorPxmLbl = qtw.QLabel("Simulator image")
         self.simulatorPxmLbl.setPixmap(self.simulatorPxm)
 

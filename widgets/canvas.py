@@ -1,6 +1,6 @@
 import matplotlib
 matplotlib.use("Qt5Agg")
-from PySide2 import QtWidgets as qtw
+from PySide6 import QtWidgets as qtw
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure

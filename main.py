@@ -1,8 +1,8 @@
 import sys
 
-from PySide2 import QtWidgets as qtw
-from PySide2 import QtGui as qtg
-from PySide2 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui as qtg
+from PySide6 import QtCore as qtc
 import tifffile
 
 from widgets.resources import *
@@ -134,7 +134,7 @@ class MainWindow(qtw.QMainWindow):
         self.fileMenu = self.menuBar.addMenu("Datei")
         self.helpMenu = self.menuBar.addMenu("Hilfe")
 
-        self.closeAction = qtw.QAction(
+        self.closeAction = qtg.QAction(
             self.style().standardIcon(qtw.QStyle.SP_DockWidgetCloseButton),
             "Beenden",
             self,
@@ -143,14 +143,14 @@ class MainWindow(qtw.QMainWindow):
         
         self.fileMenu.addAction(self.closeAction)
 
-        self.saveAction = qtw.QAction(
+        self.saveAction = qtg.QAction(
             self.style().standardIcon(qtw.QStyle.SP_DriveCDIcon),
             "Scan Speichern...",
             self,
             triggered=self.saveScan
         )
         if ENABLE_FILE_TREE:
-            self.openAction = qtw.QAction(
+            self.openAction = qtg.QAction(
                 self.style().standardIcon(qtw.QStyle.SP_DirOpenIcon),
                 "Dateispeicherort auswählen",
                 self,
@@ -539,17 +539,17 @@ class MainWindow(qtw.QMainWindow):
         self.toolBar.setMovable(False)
         self.toolBar.setFloatable(False)
 
-        self.lineProfileAction = qtw.QAction(
+        self.lineProfileAction = qtg.QAction(
             "Linienprofil erzeugen",
             self,
             triggered=self.actionNotImplemented
         )
-        self.adjustLevelsAction = qtw.QAction(
+        self.adjustLevelsAction = qtg.QAction(
             "Graustufen anpassen",
             self,
             triggered=self.actionNotImplemented
         )
-        self.levelPlaneAction = qtw.QAction(
+        self.levelPlaneAction = qtg.QAction(
             "Ebenen angleichen",
             self,
             triggered=self.actionNotImplemented
