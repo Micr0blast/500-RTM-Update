@@ -267,7 +267,7 @@ class ScanTabWidget(qtw.QWidget):
         length = int(np.hypot(x1-x0, y1-y0))
 
         xLine, yLine = np.linspace(x0, x1, length), np.linspace(y0, y1, length)
-        lineValues = self.image[xLine.astype(np.int), yLine.astype(np.int)]
+        lineValues = self.image[xLine.astype(int), yLine.astype(int)]
      
         self.lineProfileAxe.cla()
         

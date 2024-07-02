@@ -43,7 +43,7 @@ class ScanTimerThread(qtc.QThread):
 
 class SimulatorWindow(qtw.QMainWindow):
 
-    transmitTunnelCurrent = qtc.Signal([float,float])
+    transmitTunnelCurrent = qtc.Signal(float,float)
     transmitScanImg = qtc.Signal(list)
     transmitLineProfile = qtc.Signal(list)
 
